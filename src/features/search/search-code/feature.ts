@@ -61,7 +61,22 @@ export async function searchCode(
       },
     );
 
+    // Check if the response is valid
+    if (!searchResponse.data) {
+      throw new AzureDevOpsError('Search API returned an empty response');
+    }
+
     const results = searchResponse.data;
+
+    // Ensure results has required properties
+    if (typeof results.count !== 'number') {
+      results.count = 0;
+    }
+
+    // Ensure results.results is defined before accessing it
+    if (!results.results) {
+      results.results = [];
+    }
 
     // If includeContent is true, fetch the content for each result
     if (options.includeContent && results.results.length > 0) {
@@ -115,15 +130,38 @@ function extractOrgAndProject(
   connection: WebApi,
   projectId: string,
 ): { organization: string; project: string } {
+  if (!connection || !connection.serverUrl) {
+    throw new AzureDevOpsValidationError('Invalid connection object');
+  }
+
   // Extract organization from the connection URL
   const url = connection.serverUrl;
-  const match = url.match(/https?:\/\/dev\.azure\.com\/([^/]+)/);
-  const organization = match ? match[1] : '';
+
+  // Handle different Azure DevOps URL formats
+  let organization = '';
+
+  // Try dev.azure.com format
+  const azureMatch = url.match(/https?:\/\/dev\.azure\.com\/([^/]+)/);
+  if (azureMatch && azureMatch[1]) {
+    organization = azureMatch[1];
+  }
+
+  // Try visualstudio.com format if dev.azure.com format didn't match
+  if (!organization) {
+    const vstsMatch = url.match(/https?:\/\/([^.]+)\.visualstudio\.com/);
+    if (vstsMatch && vstsMatch[1]) {
+      organization = vstsMatch[1];
+    }
+  }
 
   if (!organization) {
     throw new AzureDevOpsValidationError(
-      'Could not extract organization from connection URL',
+      `Could not extract organization from connection URL: ${url}`,
     );
+  }
+
+  if (!projectId) {
+    throw new AzureDevOpsValidationError('Project ID is required');
   }
 
   return {
@@ -188,6 +226,11 @@ async function enrichResultsWithContent(
   connection: WebApi,
   results: CodeSearchResult[],
 ): Promise<void> {
+  // If results is undefined or empty, return early
+  if (!results || results.length === 0) {
+    return;
+  }
+
   try {
     const gitApi = await connection.getGitApi();
 
@@ -195,12 +238,24 @@ async function enrichResultsWithContent(
     await Promise.all(
       results.map(async (result) => {
         try {
+          // Skip if the result doesn't have necessary properties
+          if (!result.repository?.id || !result.path || !result.project?.name) {
+            console.warn(
+              'Skipping result with missing properties:',
+              result.path || 'unknown path',
+            );
+            return;
+          }
+
+          // Check if versions exists and has items before accessing
+          const changeId = result.versions?.[0]?.changeId;
+
           // Get the file content using the Git API
           const content = await gitApi.getItemContent(
             result.repository.id,
             result.path,
             result.project.name,
-            result.versions[0]?.changeId,
+            changeId,
           );
 
           // Convert the buffer to a string and store it in the result
