@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.1.17](https://github.com/Tiberriver256/mcp-server-azure-devops/compare/mcp-server-azure-devops-v0.1.16...mcp-server-azure-devops-v0.1.17) (2025-04-05)
+
+
+### Features
+
+* implement get_me tool ([2a3849d](https://github.com/Tiberriver256/mcp-server-azure-devops/commit/2a3849da063f6ce0877dd672992a8bc19f88230e))
+
 ## [0.1.16](https://github.com/Tiberriver256/mcp-server-azure-devops/compare/mcp-server-azure-devops-v0.1.15...mcp-server-azure-devops-v0.1.16) (2025-04-05)
 
 

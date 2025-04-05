@@ -1,6 +1,6 @@
 {
   "name": "@tiberriver256/mcp-server-azure-devops",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "description": "Azure DevOps reference server for the Model Context Protocol (MCP)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
